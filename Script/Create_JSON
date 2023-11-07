@@ -1,0 +1,36 @@
+import com.sap.gateway.ip.core.customdev.util.Message;
+import java.util.HashMap;
+import groovy.json.*
+def Message processData(Message message) {
+    
+    //Body 
+    def body = message.getBody(String.class);
+    
+    def jsonSlurper = new JsonSlurper();
+    def list = jsonSlurper.parseText(body);
+
+    def DocId = []
+    list.OtherData.each{ field ->
+        //por si el status va en minuscula
+        def value = field.value.toUpperCase()
+        if (value == 'OK')
+            DocId << field.key
+    }
+
+    //1. guardar los documentos en una propiedad
+    message.setProperty('DocumentoId', DocId )
+
+    //2. Cread un nuevo JSON 
+    //con esto creamos un JSON nuevo con algunos campos del JSON anterior
+    def newBody = [ StatusCode: list.StatusCode, 
+                    StatusMessage: list.StatusMessage ,
+                    otherData: DocId]
+    def jsonOut = JsonOutput.toJson(newBody)
+    
+    jsonOut = JsonOutput.prettyPrint(jsonOut)
+    message.setBody(jsonOut)
+
+    /// hasta aquí
+
+    return message;
+}
